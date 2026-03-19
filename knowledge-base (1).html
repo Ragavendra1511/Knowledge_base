@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KnowledgeBase</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F8F7F3;--surface:#FFFFFF;--surface2:#F2F0EA;--border:#E0DDD4;--border2:#C8C4B8;
+  --text:#1A1917;--text2:#5A5750;--text3:#8A8780;
+  --accent:#2D5BE3;--accent-bg:#EEF2FD;--accent-text:#1A3AA0;
+  --success:#166534;--success-bg:#DCFCE7;
+  --warn:#92400E;--warn-bg:#FEF3C7;
+  --danger:#991B1B;--danger-bg:#FEE2E2;
+  --admin:#7C3AED;--admin-bg:#F5F3FF;
+  --viewer:#0369A1;--viewer-bg:#F0F9FF;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6;}
+
+/* SETUP */
+#setupScreen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:2rem;background:var(--bg);}
+#setupScreen.visible{display:flex;}
+.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:600px;}
+.setup-card h1{font-family:'Instrument Serif',serif;font-size:28px;margin-bottom:.4rem;}
+.setup-card .sub{color:var(--text2);font-size:14px;margin-bottom:2rem;line-height:1.6;}
+.setup-steps{display:flex;flex-direction:column;gap:1.5rem;}
+.setup-step{border:1px solid var(--border);border-radius:10px;padding:1.25rem;}
+.setup-step h3{font-size:14px;font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:8px;}
+.step-num{width:22px;height:22px;background:var(--text);color:var(--surface);border-radius:50%;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:500;flex-shrink:0;}
+.setup-step p{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:.75rem;}
+.setup-step p:last-of-type{margin-bottom:0;}
+.copy-block{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;font-size:12px;font-family:'Courier New',monospace;color:var(--text);margin:.5rem 0;word-break:break-all;white-space:pre-wrap;}
+
+/* LOGIN */
+#loginScreen{display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--bg);padding:1rem;}
+#loginScreen.visible{display:flex;}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;width:100%;max-width:380px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:2rem;}
+.brand-mark{width:34px;height:34px;background:var(--text);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.brand-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.brand-name{font-family:'Instrument Serif',serif;font-size:20px;}
+.login-error{background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:1rem;display:none;}
+.login-error.visible{display:block;}
+
+/* BUTTONS */
+.btn{padding:8px 15px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;font-weight:500;transition:background .12s,border-color .12s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn:hover{background:var(--bg);border-color:var(--border2);}
+.btn-primary{background:var(--text);color:var(--surface);border-color:var(--text);}
+.btn-primary:hover{background:#333;border-color:#333;}
+.btn-full{width:100%;justify-content:center;padding:11px;}
+.btn-danger{color:var(--danger);border-color:#FCA5A5;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* FIELDS */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:1rem;}
+.field label{font-size:13px;font-weight:500;}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 13px;font-size:14px;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:var(--surface);}
+.field input::placeholder{color:var(--text3);}
+.field .hint{font-size:12px;color:var(--text3);margin-top:3px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
+/* APP */
+#appScreen{display:none;}
+#appScreen.visible{display:grid;grid-template-columns:260px 1fr;grid-template-rows:56px 1fr;min-height:100vh;}
+
+header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.25rem;gap:1rem;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.logo-mark{width:30px;height:30px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-mark svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.logo-name{font-family:'Instrument Serif',serif;font-size:18px;color:var(--text);}
+.header-search{flex:1;max-width:460px;position:relative;}
+.header-search input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 13px 7px 34px;font-size:14px;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s;}
+.header-search input:focus{border-color:var(--accent);background:var(--surface);}
+.header-search input::placeholder{color:var(--text3);}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.sync-indicator{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#22C55E;transition:background .3s;}
+.sync-dot.syncing{background:#F59E0B;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.user-chip{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);cursor:default;font-size:13px;}
+.avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.avatar-admin{background:var(--admin-bg);color:var(--admin);}
+.avatar-viewer{background:var(--viewer-bg);color:var(--viewer);}
+.role-badge{font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;}
+.role-admin{background:var(--admin-bg);color:var(--admin);}
+.role-viewer{background:var(--viewer-bg);color:var(--viewer);}
+
+aside{background:var(--surface);border-right:1px solid var(--border);padding:1.25rem 0;overflow-y:auto;display:flex;flex-direction:column;}
+.sidebar-section{margin-bottom:1.5rem;}
+.sidebar-label{font-size:11px;font-weight:500;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;padding:0 1.25rem;margin-bottom:4px;}
+.sidebar-item{display:flex;align-items:center;gap:9px;padding:7px 1.25rem;font-size:14px;color:var(--text2);cursor:pointer;transition:background .1s,color .1s;border:none;background:none;width:100%;text-align:left;font-family:inherit;}
+.sidebar-item:hover{background:var(--bg);color:var(--text);}
+.sidebar-item.active{background:var(--accent-bg);color:var(--accent-text);font-weight:500;}
+.sidebar-item .item-icon{font-size:15px;width:18px;text-align:center;}
+.sidebar-item .item-count{margin-left:auto;background:var(--surface2);color:var(--text3);font-size:11px;padding:2px 7px;border-radius:20px;}
+.sidebar-item.active .item-count{background:var(--accent-bg);color:var(--accent-text);}
+.sidebar-footer{margin-top:auto;padding:1rem 1.25rem;}
+
+main{overflow-y:auto;padding:2rem;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* HOME */
+.home-hero{text-align:center;padding:2.5rem 1rem 2rem;}
+.home-hero h1{font-family:'Instrument Serif',serif;font-size:40px;line-height:1.15;letter-spacing:-.5px;margin-bottom:.6rem;}
+.home-hero h1 em{font-style:italic;color:var(--text2);}
+.home-hero p{color:var(--text2);font-size:15px;max-width:380px;margin:0 auto 1.5rem;}
+.hero-search{max-width:520px;margin:0 auto;position:relative;}
+.hero-search input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:12px 18px 12px 44px;font-size:16px;font-family:inherit;color:var(--text);background:var(--surface);outline:none;box-shadow:0 2px 12px rgba(0,0,0,.06);transition:border-color .15s;}
+.hero-search input:focus{border-color:var(--accent);}
+.hero-search input::placeholder{color:var(--text3);}
+.hero-search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text3);}
+.stats-row{display:flex;justify-content:center;gap:2.5rem;margin-top:2rem;padding-top:1.75rem;border-top:1px solid var(--border);}
+.stat{text-align:center;}
+.stat-num{font-size:26px;font-weight:500;}
+.stat-label{font-size:12px;color:var(--text3);margin-top:2px;}
+.section-title{font-family:'Instrument Serif',serif;font-size:22px;margin-bottom:1rem;}
+
+/* CATEGORIES */
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:1rem;margin-bottom:2.5rem;}
+.category-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.category-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.cat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:.75rem;}
+.cat-name{font-size:14px;font-weight:500;margin-bottom:2px;}
+.cat-count{font-size:12px;color:var(--text3);}
+
+/* ARTICLE CARDS */
+.articles-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;}
+.filters{display:flex;gap:6px;flex-wrap:wrap;}
+.filter-tag{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text2);cursor:pointer;font-family:inherit;transition:all .12s;}
+.filter-tag:hover{border-color:var(--border2);}
+.filter-tag.active{background:var(--text);color:var(--surface);border-color:var(--text);}
+.article-list{display:flex;flex-direction:column;gap:8px;}
+.article-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;cursor:pointer;transition:border-color .15s;display:flex;align-items:flex-start;gap:1rem;}
+.article-card:hover{border-color:var(--border2);}
+.article-body{flex:1;min-width:0;}
+.article-card-title{font-size:15px;font-weight:500;margin-bottom:4px;}
+.article-card-desc{font-size:13px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.article-meta{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;}
+.tag-it{background:#EEF2FD;color:#1A3AA0;}
+.tag-hr{background:#F0FDF4;color:#166534;}
+.tag-finance{background:#FEF3C7;color:#92400E;}
+.tag-policy{background:#FDF2F8;color:#9D174D;}
+.tag-tech{background:#F0F9FF;color:#0C4A6E;}
+.tag-draft{background:var(--surface2);color:var(--text3);}
+.article-date{font-size:11px;color:var(--text3);}
+.article-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;}
+.helpful-count{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:4px;}
+
+/* ARTICLE DETAIL */
+.back-btn{background:none;border:none;cursor:pointer;color:var(--text2);padding:6px;border-radius:6px;font-family:inherit;font-size:14px;display:flex;align-items:center;gap:6px;transition:background .1s;}
+.back-btn:hover{background:var(--surface2);}
+.article-detail{max-width:720px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;}
+.article-detail-title{font-family:'Instrument Serif',serif;font-size:28px;line-height:1.25;margin-bottom:.75rem;}
+.article-detail-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);}
+.article-content{font-size:15px;line-height:1.8;color:var(--text);}
+.article-content h3{font-family:'Instrument Serif',serif;font-size:20px;margin:1.5rem 0 .6rem;}
+.article-content p{margin-bottom:1rem;}
+.article-content ul{padding-left:1.5rem;margin-bottom:1rem;}
+.article-content li{margin-bottom:.4rem;}
+.article-content .callout{background:var(--accent-bg);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.875rem 1rem;margin:1rem 0;font-size:14px;color:var(--accent-text);}
+.article-content .callout-warn{background:var(--warn-bg);border-left:3px solid #D97706;border-radius:0 8px 8px 0;padding:.875rem 1rem;margin:1rem 0;font-size:14px;color:var(--warn);}
+.article-content code{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:13px;font-family:'Courier New',monospace;}
+.helpful-section{margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.helpful-section p{font-size:14px;color:var(--text2);}
+.helpful-btn{padding:7px 16px;border-radius:7px;border:1px solid var(--border);background:var(--surface);font-family:inherit;font-size:13px;cursor:pointer;transition:all .12s;}
+.helpful-btn.yes:hover{background:var(--success-bg);border-color:#86EFAC;color:var(--success);}
+.helpful-btn.no:hover{background:var(--danger-bg);border-color:#FCA5A5;color:var(--danger);}
+
+/* EDITOR */
+.editor-wrap{max-width:760px;}
+.editor-form{display:flex;flex-direction:column;gap:1.25rem;}
+.editor-body{background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;min-height:300px;font-size:14px;font-family:inherit;color:var(--text);padding:12px 14px;outline:none;line-height:1.75;}
+.editor-body:focus{border-color:var(--accent);}
+.editor-toolbar{display:flex;gap:4px;flex-wrap:wrap;padding:8px;background:var(--bg);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;}
+.tool-btn{padding:5px 10px;border-radius:5px;border:1px solid transparent;background:none;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text2);font-weight:500;transition:background .1s;}
+.tool-btn:hover{background:var(--surface);border-color:var(--border);color:var(--text);}
+.tool-sep{width:1px;background:var(--border);margin:4px 2px;}
+
+/* USERS TABLE */
+.users-table{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.users-table table{width:100%;border-collapse:collapse;}
+.users-table th{background:var(--bg);text-align:left;padding:10px 16px;font-size:12px;font-weight:500;color:var(--text2);border-bottom:1px solid var(--border);}
+.users-table td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle;}
+.users-table tr:last-child td{border-bottom:none;}
+.users-table tr:hover td{background:var(--bg);}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:1.75rem;width:100%;max-width:460px;}
+.modal h3{font-size:17px;font-weight:500;margin-bottom:.5rem;}
+.modal>.modal-desc{font-size:14px;color:var(--text2);margin-bottom:1.5rem;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--text);color:var(--surface);padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:all .3s;pointer-events:none;max-width:320px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:#166534;}
+.toast.error{background:var(--danger);}
+
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;}
+.loading-overlay.hidden{display:none;}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--text2);}
+.empty-state h3{font-size:16px;font-weight:500;color:var(--text);margin-bottom:.4rem;}
+
+@media(max-width:700px){
+  #appScreen.visible{grid-template-columns:1fr;}
+  aside{display:none;}
+  main{padding:1.25rem;}
+  .form-row{grid-template-columns:1fr;}
+  .home-hero h1{font-size:28px;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <p style="font-size:14px;color:var(--text2)" id="loadingMsg">Connecting…</p>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <h1>Connect Google Sheets</h1>
+    <p class="sub">Complete this one-time setup to connect your knowledge base to a Google Sheet as the database. Articles and users will be read and written there.</p>
+    <div class="setup-steps">
+
+      <div class="setup-step">
+        <h3><span class="step-num">1</span>Create a Google Sheet</h3>
+        <p>Go to <strong>sheets.google.com</strong>, create a new spreadsheet, and add two tabs named exactly <code>Articles</code> and <code>Users</code>.</p>
+        <p>In row 1 of <strong>Articles</strong>, paste these headers:</p>
+        <div class="copy-block">id	title	desc	category	author	authorEmail	date	content	helpful	notHelpful	views	status</div>
+        <p>In row 1 of <strong>Users</strong>, paste these headers:</p>
+        <div class="copy-block">id	name	email	password	role	createdAt</div>
+        <p>Set sharing to <strong>Anyone with the link → Viewer</strong> so reads work without OAuth.</p>
+        <p>Paste your Sheet ID (the long string in the URL between <code>/d/</code> and <code>/edit</code>):</p>
+        <div class="field" style="margin-bottom:0;margin-top:.5rem;">
+          <input type="text" id="cfgSheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <h3><span class="step-num">2</span>Get a Google API Key</h3>
+        <p>Go to <strong>console.cloud.google.com</strong> → APIs &amp; Services → Library → enable <strong>Google Sheets API</strong>. Then go to Credentials → Create Credentials → API Key.</p>
+        <div class="field" style="margin-bottom:0;margin-top:.5rem;">
+          <input type="text" id="cfgApiKey" placeholder="AIzaSy…">
+          <span class="hint">Restrict the key to the Sheets API for security.</span>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <h3><span class="step-num">3</span>OAuth Client ID (for writes)</h3>
+        <p>To write data (create/edit articles, manage users) the app needs OAuth. Go to Credentials → Create Credentials → OAuth 2.0 Client ID → Web application. Add your page URL to <strong>Authorised JavaScript origins</strong>.</p>
+        <div class="field" style="margin-bottom:0;margin-top:.5rem;">
+          <input type="text" id="cfgClientId" placeholder="123456789-abc.apps.googleusercontent.com">
+          <span class="hint">Only needed for Admins. Viewers use read-only API key access.</span>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <h3><span class="step-num">4</span>Create your first Admin</h3>
+        <div class="form-row">
+          <div class="field"><label>Full Name</label><input type="text" id="cfgName" placeholder="Jane Smith"></div>
+          <div class="field"><label>Email</label><input type="text" id="cfgEmail" placeholder="admin@company.com"></div>
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>Password</label><input type="password" id="cfgPass" placeholder="Choose a strong password"></div>
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="saveSetup()">Save &amp; Launch →</button>
+      <p style="font-size:12px;color:var(--text3);text-align:center;">Settings saved in your browser. No server needed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <span class="brand-name">KnowledgeBase</span>
+    </div>
+    <h2 style="font-size:22px;font-weight:500;margin-bottom:.3rem;">Welcome back</h2>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:1.75rem;">Sign in to access the knowledge base.</p>
+    <div class="login-error" id="loginError">Incorrect email or password.</div>
+    <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@company.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()" style="margin-top:.5rem">Sign in</button>
+    <p style="font-size:12px;color:var(--text3);text-align:center;margin-top:1.25rem;cursor:pointer;" onclick="showSetup()">⚙ Reconfigure connection</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <header>
+    <div class="logo" onclick="showView('home')">
+      <div class="logo-mark"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <span class="logo-name">KnowledgeBase</span>
+    </div>
+    <div class="header-search">
+      <svg class="search-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="headerSearch" placeholder="Search articles…" oninput="handleSearch(this.value)">
+    </div>
+    <div class="header-right">
+      <div class="sync-indicator">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncText">Synced</span>
+      </div>
+      <div class="user-chip" id="userChip"></div>
+    </div>
+  </header>
+
+  <aside>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Browse</div>
+      <button class="sidebar-item active" id="nav-home" onclick="showView('home')"><span class="item-icon">🏠</span>Home</button>
+      <button class="sidebar-item" id="nav-articles" onclick="showView('articles')"><span class="item-icon">📄</span>All Articles<span class="item-count" id="cnt-all">0</span></button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Categories</div>
+      <button class="sidebar-item" onclick="filterByCategory('IT')"><span class="item-icon">💻</span>IT &amp; Systems<span class="item-count" id="cnt-IT">0</span></button>
+      <button class="sidebar-item" onclick="filterByCategory('HR')"><span class="item-icon">👥</span>HR &amp; People<span class="item-count" id="cnt-HR">0</span></button>
+      <button class="sidebar-item" onclick="filterByCategory('Finance')"><span class="item-icon">💰</span>Finance<span class="item-count" id="cnt-Finance">0</span></button>
+      <button class="sidebar-item" onclick="filterByCategory('Policy')"><span class="item-icon">📋</span>Policy<span class="item-count" id="cnt-Policy">0</span></button>
+      <button class="sidebar-item" onclick="filterByCategory('Tech')"><span class="item-icon">🔧</span>Tech Tools<span class="item-count" id="cnt-Tech">0</span></button>
+    </div>
+    <div class="sidebar-section" id="adminSidebar" style="display:none;">
+      <div class="sidebar-label">Admin</div>
+      <button class="sidebar-item" id="nav-editor" onclick="showView('editor')"><span class="item-icon">✏️</span>New Article</button>
+      <button class="sidebar-item" id="nav-users" onclick="showView('users')"><span class="item-icon">👤</span>Manage Users</button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn btn-full" onclick="doLogout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- HOME -->
+    <div id="view-home" class="view active">
+      <div class="home-hero">
+        <h1>Find answers,<br><em>instantly.</em></h1>
+        <p>Your organisation's centralised self-service knowledge base.</p>
+        <div class="hero-search">
+          <svg class="hero-search-icon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="heroSearch" placeholder="Search for anything…" oninput="handleSearch(this.value)">
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num" id="stat-articles">—</div><div class="stat-label">Articles</div></div>
+          <div class="stat"><div class="stat-num">5</div><div class="stat-label">Categories</div></div>
+          <div class="stat"><div class="stat-num" id="stat-helpful">—</div><div class="stat-label">Marked helpful</div></div>
+        </div>
+      </div>
+      <div style="max-width:860px;margin:0 auto;">
+        <h2 class="section-title">Browse by category</h2>
+        <div class="category-grid" id="categoryGrid"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h2 class="section-title" style="margin:0">Recently added</h2>
+          <button class="btn btn-primary" id="adminNewBtn" style="display:none;" onclick="showView('editor')">+ New Article</button>
+        </div>
+        <div class="article-list" id="recentList"></div>
+      </div>
+    </div>
+
+    <!-- ALL ARTICLES -->
+    <div id="view-articles" class="view">
+      <div class="articles-header">
+        <h2 class="section-title" style="margin:0" id="articlesHeading">All Articles</h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div class="filters" id="filterTags"></div>
+          <button class="btn btn-primary" id="adminNewBtn2" style="display:none;" onclick="showView('editor')">+ New Article</button>
+        </div>
+      </div>
+      <div class="article-list" id="articleList"></div>
+    </div>
+
+    <!-- ARTICLE DETAIL -->
+    <div id="view-detail" class="view">
+      <div style="margin-bottom:1.5rem;">
+        <button class="back-btn" onclick="goBack()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back
+        </button>
+      </div>
+      <div class="article-detail" id="articleDetail"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="view-editor" class="view">
+      <div class="editor-wrap">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;">
+          <button class="back-btn" onclick="cancelEditor()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Cancel
+          </button>
+          <h2 style="font-size:20px;font-weight:500;" id="editorTitle">New Article</h2>
+        </div>
+        <div class="editor-form">
+          <div class="field"><label>Title *</label><input type="text" id="fTitle" placeholder="e.g. How to reset your password"></div>
+          <div class="field"><label>Short Description</label><input type="text" id="fDesc" placeholder="One-line summary shown in search results"></div>
+          <div class="form-row">
+            <div class="field"><label>Category *</label>
+              <select id="fCat"><option value="">Select…</option><option value="IT">IT &amp; Systems</option><option value="HR">HR &amp; People</option><option value="Finance">Finance</option><option value="Policy">Policy</option><option value="Tech">Tech Tools</option></select>
+            </div>
+            <div class="field"><label>Status</label>
+              <select id="fStatus"><option value="published">Published</option><option value="draft">Draft</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Content *</label>
+            <div>
+              <div class="editor-toolbar">
+                <button class="tool-btn" onclick="fmt('bold')"><b>B</b></button>
+                <button class="tool-btn" onclick="fmt('italic')"><i>I</i></button>
+                <div class="tool-sep"></div>
+                <button class="tool-btn" onclick="insertH3()">H3</button>
+                <button class="tool-btn" onclick="fmt('insertUnorderedList')">• List</button>
+                <div class="tool-sep"></div>
+                <button class="tool-btn" onclick="insertCallout()">ℹ Note</button>
+                <button class="tool-btn" onclick="insertWarn()">⚠ Warn</button>
+                <button class="tool-btn" onclick="insertCode()">Code</button>
+              </div>
+              <div class="editor-body" id="fContent" contenteditable="true"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" id="saveBtn" onclick="saveArticle()">Save to Sheets</button>
+            <button class="btn" onclick="cancelEditor()">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="view-users" class="view">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <h2 class="section-title" style="margin:0">Manage Users</h2>
+        <button class="btn btn-primary" onclick="openUserModal()">+ Add User</button>
+      </div>
+      <div class="users-table" id="usersTable"></div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="view-search" class="view">
+      <div style="margin-bottom:1.25rem;">
+        <h2 id="searchHeading" style="font-size:18px;font-weight:500;"></h2>
+        <p id="searchSub" style="color:var(--text2);font-size:14px;margin-top:2px;"></p>
+      </div>
+      <div class="article-list" id="searchList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay hidden" id="deleteModal">
+  <div class="modal">
+    <h3>Delete article?</h3>
+    <p class="modal-desc">This permanently removes the article from Google Sheets.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="userModal">
+  <div class="modal">
+    <h3 id="userModalTitle">Add User</h3>
+    <p class="modal-desc">Account will be saved to Google Sheets.</p>
+    <div class="field"><label>Full Name *</label><input type="text" id="uName" placeholder="Jane Smith"></div>
+    <div class="field"><label>Email *</label><input type="email" id="uEmail" placeholder="jane@company.com"></div>
+    <div class="field"><label>Password *</label><input type="password" id="uPass" placeholder="••••••••"></div>
+    <div class="field"><label>Role</label>
+      <select id="uRole"><option value="viewer">Viewer — read only</option><option value="admin">Admin — full access</option></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('userModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="deleteUserModal">
+  <div class="modal">
+    <h3>Remove user?</h3>
+    <p class="modal-desc">This permanently deletes the account from Google Sheets.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('deleteUserModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDeleteUser()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════ CONFIG ═══════════════
+const CFG_KEY = 'kb_cfg_v3';
+const SESSION_KEY = 'kb_sess';
+let CFG = null;
+let articles = [], users = [];
+let currentUser = null;
+let currentViewName = 'home', prevView = 'home';
+let editingArticleId = null, deleteArticleTarget = null, deleteUserTarget = null;
+let articleRowMap = {}, userRowMap = {};
+
+function loadConfig() {
+  try { CFG = JSON.parse(localStorage.getItem(CFG_KEY)); } catch(e) { CFG = null; }
+  return CFG;
+}
+function saveConfig(c) { localStorage.setItem(CFG_KEY, JSON.stringify(c)); CFG = c; }
+
+// ═══════════════ SHEETS API ═══════════════
+async function sheetsRead(range) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${encodeURIComponent(range)}?key=${CFG.apiKey}`;
+  const r = await fetch(url);
+  if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || 'Read failed '+r.status); }
+  return (await r.json()).values || [];
+}
+
+async function sheetsWrite(range, values) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+  const r = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+    body: JSON.stringify({ range, values })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || 'Write failed '+r.status); }
+  return r.json();
+}
+
+async function sheetsAppend(range, values) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+    body: JSON.stringify({ values })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || 'Append failed '+r.status); }
+  return r.json();
+}
+
+async function sheetsClearRow(range) {
+  const token = await ensureToken();
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.sheetId}/values/${encodeURIComponent(range)}:clear`;
+  const r = await fetch(url, { method:'POST', headers:{ 'Authorization':'Bearer '+token } });
+  if (!r.ok) throw new Error('Clear failed '+r.status);
+}
+
+// ═══════════════ OAUTH ═══════════════
+let tokenClient = null;
+let accessToken = null;
+let tokenExpiry = 0;
+
+function loadGIS() {
+  return new Promise(res => {
+    if (window.google?.accounts) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = res;
+    document.head.appendChild(s);
+  });
+}
+
+async function ensureToken() {
+  if (accessToken && Date.now() < tokenExpiry - 60000) return accessToken;
+  await loadGIS();
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: CFG.clientId,
+      scope: 'https://www.googleapis.com/auth/spreadsheets',
+      callback: (resp) => {
+        if (resp.error) return reject(new Error(resp.error));
+        accessToken = resp.access_token;
+        tokenExpiry = Date.now() + (resp.expires_in * 1000);
+        resolve(accessToken);
+      }
+    });
+    client.requestAccessToken({ prompt: accessToken ? '' : 'none' });
+  });
+}
+
+// ═══════════════ DATA LAYER ═══════════════
+const A_COLS = ['id','title','desc','category','author','authorEmail','date','content','helpful','notHelpful','views','status'];
+const U_COLS = ['id','name','email','password','role','createdAt'];
+
+function rowToObj(row, cols) {
+  const o = {};
+  cols.forEach((c,i) => o[c] = row[i] ?? '');
+  return o;
+}
+function objToRow(o, cols) { return cols.map(c => String(o[c] ?? '')); }
+
+async function loadAllData() {
+  setSyncing(true);
+  try {
+    const [aRows, uRows] = await Promise.all([sheetsRead('Articles!A:L'), sheetsRead('Users!A:F')]);
+    articles = []; articleRowMap = {};
+    aRows.forEach((row, i) => {
+      if (i === 0 || !row[0]) return;
+      const a = rowToObj(row, A_COLS);
+      a.helpful = parseInt(a.helpful)||0;
+      a.notHelpful = parseInt(a.notHelpful)||0;
+      a.views = parseInt(a.views)||0;
+      articles.push(a);
+      articleRowMap[a.id] = i + 1;
+    });
+    users = []; userRowMap = {};
+    uRows.forEach((row, i) => {
+      if (i === 0 || !row[0]) return;
+      const u = rowToObj(row, U_COLS);
+      users.push(u);
+      userRowMap[u.id] = i + 1;
+    });
+    setSyncing(false);
+    return true;
+  } catch(e) {
+    setSyncing(false, true);
+    showToast('Load error: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function persistArticle(a) {
+  setSyncing(true);
+  try {
+    const row = objToRow(a, A_COLS);
+    if (articleRowMap[a.id]) {
+      await sheetsWrite(`Articles!A${articleRowMap[a.id]}:L${articleRowMap[a.id]}`, [row]);
+    } else {
+      await sheetsAppend('Articles!A:L', [row]);
+      await loadAllData();
+    }
+    setSyncing(false);
+    return true;
+  } catch(e) {
+    setSyncing(false, true);
+    showToast('Save failed: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function deleteArticleRow(id) {
+  setSyncing(true);
+  try {
+    const r = articleRowMap[id];
+    if (r) await sheetsClearRow(`Articles!A${r}:L${r}`);
+    await loadAllData();
+    setSyncing(false);
+  } catch(e) { setSyncing(false,true); showToast('Delete failed: '+e.message,'error'); }
+}
+
+async function persistUser(u) {
+  setSyncing(true);
+  try {
+    const row = objToRow(u, U_COLS);
+    if (userRowMap[u.id]) {
+      await sheetsWrite(`Users!A${userRowMap[u.id]}:F${userRowMap[u.id]}`, [row]);
+    } else {
+      await sheetsAppend('Users!A:F', [row]);
+      await loadAllData();
+    }
+    setSyncing(false);
+  } catch(e) { setSyncing(false,true); showToast('Save failed: '+e.message,'error'); }
+}
+
+async function deleteUserRow(id) {
+  setSyncing(true);
+  try {
+    const r = userRowMap[id];
+    if (r) await sheetsClearRow(`Users!A${r}:F${r}`);
+    await loadAllData();
+    setSyncing(false);
+  } catch(e) { setSyncing(false,true); showToast('Delete failed: '+e.message,'error'); }
+}
+
+// ═══════════════ SETUP ═══════════════
+function showSetup() {
+  document.getElementById('loginScreen').classList.remove('visible');
+  document.getElementById('setupScreen').classList.add('visible');
+}
+
+async function saveSetup() {
+  const sheetId = v('cfgSheetId'), apiKey = v('cfgApiKey'), clientId = v('cfgClientId');
+  const name = v('cfgName'), email = v('cfgEmail'), pass = v('cfgPass');
+  if (!sheetId||!apiKey||!name||!email||!pass) { alert('Please fill in all required fields.'); return; }
+
+  saveConfig({ sheetId, apiKey, clientId: clientId || '' });
+
+  // Write first admin — no OAuth needed if sheet is public writable, but we use API key append trick
+  // Actually for initial write we still need a token — prompt once
+  try {
+    const token = await ensureToken();
+    const admin = { id: genId(), name, email: email.toLowerCase(), password: pass, role: 'admin', createdAt: today() };
+    const row = objToRow(admin, U_COLS);
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Users!A:F:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+    const r = await fetch(url, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({ values: [row] })
+    });
+    if (!r.ok) { const e = await r.json(); alert('Sheets error: '+JSON.stringify(e.error?.message)); return; }
+    showToast('Setup complete!','success');
+    document.getElementById('setupScreen').classList.remove('visible');
+    showLogin();
+  } catch(e) { alert('OAuth error: '+e.message+'\n\nMake sure your Client ID is correct and this page URL is in Authorised JS origins.'); }
+}
+
+// ═══════════════ AUTH ═══════════════
+function showLogin() {
+  hide('loadingOverlay');
+  document.getElementById('loginScreen').classList.add('visible');
+}
+
+async function doLogin() {
+  const email = v('loginEmail').toLowerCase(), pass = v('loginPass');
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.classList.remove('visible');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const rows = await sheetsRead('Users!A:F');
+    users = []; userRowMap = {};
+    rows.forEach((row, i) => {
+      if (i===0||!row[0]) return;
+      const u = rowToObj(row, U_COLS);
+      users.push(u); userRowMap[u.id] = i+1;
+    });
+    const user = users.find(u => u.email.toLowerCase()===email && u.password===pass);
+    if (!user) { errEl.classList.add('visible'); btn.disabled=false; btn.textContent='Sign in'; return; }
+    currentUser = user;
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    document.getElementById('loginScreen').classList.remove('visible');
+    await launchApp();
+  } catch(e) {
+    errEl.textContent = 'Connection error: '+e.message;
+    errEl.classList.add('visible');
+    btn.disabled=false; btn.textContent='Sign in';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  currentUser = null; accessToken = null;
+  document.getElementById('appScreen').classList.remove('visible');
+  showLogin();
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPass').value='';
+}
+
+// ═══════════════ APP LAUNCH ═══════════════
+async function launchApp() {
+  setLoadMsg('Loading knowledge base…');
+  show('loadingOverlay');
+  const ok = await loadAllData();
+  hide('loadingOverlay');
+  if (!ok) return;
+
+  const isAdmin = currentUser.role === 'admin';
+  document.getElementById('adminSidebar').style.display = isAdmin ? '' : 'none';
+  document.getElementById('adminNewBtn').style.display = isAdmin ? '' : 'none';
+  document.getElementById('adminNewBtn2').style.display = isAdmin ? '' : 'none';
+
+  const initials = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('userChip').innerHTML =
+    `<div class="avatar avatar-${currentUser.role}">${initials}</div>
+     <span>${esc(currentUser.name)}</span>
+     <span class="role-badge role-${currentUser.role}">${currentUser.role}</span>`;
+
+  document.getElementById('appScreen').classList.add('visible');
+  showView('home');
+}
+
+// ═══════════════ VIEWS ═══════════════
+const CATS = {
+  IT:{icon:'💻',color:'#EEF2FD',label:'IT & Systems'},
+  HR:{icon:'👥',color:'#F0FDF4',label:'HR & People'},
+  Finance:{icon:'💰',color:'#FEF3C7',label:'Finance'},
+  Policy:{icon:'📋',color:'#FDF2F8',label:'Policy'},
+  Tech:{icon:'🔧',color:'#F0F9FF',label:'Tech Tools'}
+};
+
+function showView(name, data) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  const nav = document.getElementById('nav-'+name);
+  if (nav) nav.classList.add('active');
+  prevView = currentViewName; currentViewName = name;
+  if (name==='home') renderHome();
+  else if (name==='articles') renderArticleList(pubArticles());
+  else if (name==='editor') setupEditor(data);
+  else if (name==='users') renderUsers();
+  updateCounts();
+}
+
+function pubArticles() { return articles.filter(a=>a.status==='published'); }
+
+function updateCounts() {
+  const pub = pubArticles();
+  document.getElementById('cnt-all').textContent = pub.length;
+  document.getElementById('stat-articles').textContent = pub.length;
+  document.getElementById('stat-helpful').textContent = pub.reduce((s,a)=>s+(a.helpful||0),0);
+  Object.keys(CATS).forEach(cat => {
+    const el = document.getElementById('cnt-'+cat);
+    if (el) el.textContent = pub.filter(a=>a.category===cat).length;
+  });
+}
+
+function renderHome() {
+  const pub = pubArticles();
+  document.getElementById('categoryGrid').innerHTML = Object.entries(CATS).map(([k,c])=>{
+    const n = pub.filter(a=>a.category===k).length;
+    return `<div class="category-card" onclick="filterByCategory('${k}')">
+      <div class="cat-icon" style="background:${c.color}">${c.icon}</div>
+      <div class="cat-name">${c.label}</div>
+      <div class="cat-count">${n} article${n!==1?'s':''}</div></div>`;
+  }).join('');
+  const recent = [...pub].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,4);
+  document.getElementById('recentList').innerHTML = recent.map(cardHTML).join('') ||
+    `<div class="empty-state"><h3>No articles yet</h3><p>Admins can create the first article.</p></div>`;
+}
+
+function renderArticleList(list, heading='All Articles') {
+  document.getElementById('articlesHeading').textContent = heading;
+  document.getElementById('filterTags').innerHTML = ['All',...Object.keys(CATS)].map(f=>
+    `<button class="filter-tag ${f==='All'?'active':''}" onclick="applyFilter('${f}',this)">${f==='All'?'All':CATS[f].label}</button>`
+  ).join('');
+  document.getElementById('articleList').innerHTML = list.length ? list.map(cardHTML).join('') :
+    `<div class="empty-state"><h3>No articles found</h3></div>`;
+}
+
+function applyFilter(cat, btn) {
+  document.querySelectorAll('.filter-tag').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const list = cat==='All' ? pubArticles() : pubArticles().filter(a=>a.category===cat);
+  document.getElementById('articleList').innerHTML = list.length ? list.map(cardHTML).join('') :
+    `<div class="empty-state"><h3>No articles in this category</h3></div>`;
+}
+
+function filterByCategory(cat) {
+  showView('articles');
+  document.getElementById('articlesHeading').textContent = CATS[cat].label;
+  const list = pubArticles().filter(a=>a.category===cat);
+  document.getElementById('articleList').innerHTML = list.length ? list.map(cardHTML).join('') :
+    `<div class="empty-state"><h3>No articles yet</h3></div>`;
+  document.getElementById('filterTags').innerHTML = ['All',...Object.keys(CATS)].map(f=>
+    `<button class="filter-tag ${f===cat?'active':''}" onclick="applyFilter('${f}',this)">${f==='All'?'All':CATS[f].label}</button>`
+  ).join('');
+}
+
+function cardHTML(a) {
+  const tc = 'tag-'+a.category.toLowerCase();
+  return `<div class="article-card" onclick="openArticle('${a.id}')">
+    <div class="article-body">
+      <div class="article-card-title">${esc(a.title)}</div>
+      <div class="article-card-desc">${esc(a.desc)}</div>
+      <div class="article-meta">
+        <span class="tag ${tc}">${a.category}</span>
+        <span class="article-date">${fmtDate(a.date)}</span>
+        ${a.author?`<span class="article-date">by ${esc(a.author)}</span>`:''}
+        ${a.status==='draft'?'<span class="tag tag-draft">Draft</span>':''}
+      </div>
+    </div>
+    <div class="article-right">
+      <div class="helpful-count">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+        ${a.helpful}
+      </div>
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color:var(--text3)"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+  </div>`;
+}
+
+function openArticle(id) {
+  const a = articles.find(x=>x.id===id);
+  if (!a) return;
+  const isAdmin = currentUser?.role === 'admin';
+  const tc = 'tag-'+a.category.toLowerCase();
+  document.getElementById('articleDetail').innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem;">
+      <div class="article-detail-title">${esc(a.title)}</div>
+      ${isAdmin?`<div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn" onclick="showView('editor',window._oa)" style="font-size:12px;padding:5px 10px;">Edit</button>
+        <button class="btn btn-danger" onclick="promptDelete('${id}')" style="font-size:12px;padding:5px 10px;">Delete</button>
+      </div>`:''}
+    </div>
+    <div class="article-detail-meta">
+      <span class="tag ${tc}">${a.category}</span>
+      <span>${fmtDate(a.date)}</span>
+      ${a.author?`<span>by ${esc(a.author)}</span>`:''}
+      <span style="margin-left:auto;display:flex;align-items:center;gap:4px;">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        ${a.views} views
+      </span>
+    </div>
+    <div class="article-content">${a.content}</div>
+    <div class="helpful-section">
+      <p>Was this helpful?</p>
+      <button class="helpful-btn yes" id="hYes" onclick="markHelpful('${id}',true)">👍 Yes (${a.helpful})</button>
+      <button class="helpful-btn no" id="hNo" onclick="markHelpful('${id}',false)">👎 No (${a.notHelpful})</button>
+    </div>`;
+  window._oa = a; // reference for edit button
+  a.views = (a.views||0)+1;
+  persistArticle(a).catch(()=>{});
+  showView('detail');
+}
+
+async function markHelpful(id, yes) {
+  const a = articles.find(x=>x.id===id);
+  if (!a) return;
+  if (yes) a.helpful=(a.helpful||0)+1; else a.notHelpful=(a.notHelpful||0)+1;
+  document.getElementById('hYes').textContent=`👍 Yes (${a.helpful})`;
+  document.getElementById('hNo').textContent=`👎 No (${a.notHelpful})`;
+  document.getElementById('hYes').disabled=true;
+  document.getElementById('hNo').disabled=true;
+  showToast('Feedback recorded','success');
+  await persistArticle(a);
+}
+
+function goBack() { showView(prevView==='detail'?'articles':prevView); }
+
+// ═══════════════ EDITOR ═══════════════
+function setupEditor(data) {
+  editingArticleId = data ? data.id : null;
+  document.getElementById('editorTitle').textContent = editingArticleId ? 'Edit Article' : 'New Article';
+  document.getElementById('fTitle').value = data?.title||'';
+  document.getElementById('fDesc').value = data?.desc||'';
+  document.getElementById('fCat').value = data?.category||'';
+  document.getElementById('fStatus').value = data?.status||'published';
+  document.getElementById('fContent').innerHTML = data?.content||'';
+}
+
+async function saveArticle() {
+  const title = v('fTitle'), cat = v('fCat'), content = document.getElementById('fContent').innerHTML.trim();
+  if (!title||!cat||!content) { showToast('Fill in Title, Category and Content.','error'); return; }
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Saving…';
+  const existing = editingArticleId ? articles.find(a=>a.id===editingArticleId) : null;
+  const article = {
+    id: editingArticleId||genId(), title, desc: v('fDesc'),
+    category: cat, author: currentUser.name, authorEmail: currentUser.email,
+    date: existing?.date||today(), content,
+    helpful: existing?.helpful||0, notHelpful: existing?.notHelpful||0,
+    views: existing?.views||0, status: v('fStatus')||'published'
+  };
+  if (editingArticleId) { const i=articles.findIndex(a=>a.id===editingArticleId); if(i!==-1) articles[i]=article; }
+  else articles.unshift(article);
+  const ok = await persistArticle(article);
+  btn.disabled=false; btn.textContent='Save to Sheets';
+  if (ok) { editingArticleId=null; showView('articles'); renderArticleList(pubArticles()); showToast('Article saved ✓','success'); }
+}
+
+function cancelEditor() { editingArticleId=null; showView(prevView==='editor'?'home':prevView); }
+function fmt(cmd){document.getElementById('fContent').focus();document.execCommand(cmd,false,null);}
+function insertH3(){document.getElementById('fContent').focus();document.execCommand('formatBlock',false,'h3');}
+function insertCallout(){document.getElementById('fContent').focus();document.execCommand('insertHTML',false,'<div class="callout">ℹ Note text</div><p><br></p>');}
+function insertWarn(){document.getElementById('fContent').focus();document.execCommand('insertHTML',false,'<div class="callout-warn">⚠ Warning text</div><p><br></p>');}
+function insertCode(){document.getElementById('fContent').focus();document.execCommand('insertHTML',false,'<code>code</code>');}
+
+// ═══════════════ DELETE ARTICLE ═══════════════
+function promptDelete(id){deleteArticleTarget=id;document.getElementById('deleteModal').classList.remove('hidden');}
+async function confirmDelete(){
+  closeModal('deleteModal');
+  articles=articles.filter(a=>a.id!==deleteArticleTarget);
+  await deleteArticleRow(deleteArticleTarget);
+  deleteArticleTarget=null;
+  showView('articles'); renderArticleList(pubArticles());
+}
+
+// ═══════════════ USERS ═══════════════
+function renderUsers() {
+  if (!users.length) { document.getElementById('usersTable').innerHTML='<div class="empty-state"><h3>No users found</h3></div>'; return; }
+  const rows = users.map(u=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:10px;">
+      <div class="avatar avatar-${u.role}" style="width:32px;height:32px;font-size:12px;flex-shrink:0;">${u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>
+      <div><div style="font-weight:500">${esc(u.name)}</div><div style="font-size:12px;color:var(--text3)">${esc(u.email)}</div></div>
+    </div></td>
+    <td><span class="role-badge role-${u.role}">${u.role}</span></td>
+    <td>${fmtDate(u.createdAt)}</td>
+    <td>${u.id!==currentUser.id
+      ? `<button class="btn btn-danger" style="font-size:12px;padding:4px 10px;" onclick="promptDeleteUser('${u.id}')">Remove</button>`
+      : `<span style="font-size:12px;color:var(--text3)">You</span>`}</td>
+  </tr>`).join('');
+  document.getElementById('usersTable').innerHTML=`<table><thead><tr><th>User</th><th>Role</th><th>Added</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function openUserModal(){
+  ['uName','uEmail','uPass'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('uRole').value='viewer';
+  document.getElementById('userModal').classList.remove('hidden');
+}
+async function saveUser(){
+  const name=v('uName'),email=v('uEmail').toLowerCase(),pass=v('uPass'),role=v('uRole');
+  if(!name||!email||!pass){showToast('All fields required.','error');return;}
+  if(users.find(u=>u.email.toLowerCase()===email)){showToast('Email already exists.','error');return;}
+  const u={id:genId(),name,email,password:pass,role,createdAt:today()};
+  users.push(u);
+  closeModal('userModal');
+  await persistUser(u);
+  renderUsers();
+  showToast('User added ✓','success');
+}
+function promptDeleteUser(id){deleteUserTarget=id;document.getElementById('deleteUserModal').classList.remove('hidden');}
+async function confirmDeleteUser(){
+  closeModal('deleteUserModal');
+  users=users.filter(u=>u.id!==deleteUserTarget);
+  await deleteUserRow(deleteUserTarget);
+  deleteUserTarget=null;
+  renderUsers();
+}
+
+// ═══════════════ SEARCH ═══════════════
+function handleSearch(q){
+  if(!q.trim()){if(currentViewName==='search')showView('home');return;}
+  const r=pubArticles().filter(a=>[a.title,a.desc,a.content,a.category].some(f=>(f||'').toLowerCase().includes(q.toLowerCase())));
+  document.getElementById('searchHeading').textContent=`Results for "${q}"`;
+  document.getElementById('searchSub').textContent=`${r.length} article${r.length!==1?'s':''} found`;
+  document.getElementById('searchList').innerHTML=r.length?r.map(cardHTML).join(''):
+    `<div class="empty-state"><p style="font-size:2rem">🔍</p><h3>No results</h3><p>Try different keywords.</p></div>`;
+  showView('search');
+}
+
+// ═══════════════ UTILITIES ═══════════════
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function today(){return new Date().toISOString().split('T')[0];}
+function fmtDate(d){if(!d)return '';try{return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return d;}}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function v(id){return document.getElementById(id).value.trim();}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function closeModal(id){document.getElementById(id).classList.add('hidden');}
+function setLoadMsg(msg){document.getElementById('loadingMsg').textContent=msg;}
+function setSyncing(active,error=false){
+  const dot=document.getElementById('syncDot'),txt=document.getElementById('syncText');
+  if(error){dot.style.background='#EF4444';dot.classList.remove('syncing');txt.textContent='Error';}
+  else if(active){dot.style.background='#F59E0B';dot.classList.add('syncing');txt.textContent='Syncing…';}
+  else{dot.style.background='#22C55E';dot.classList.remove('syncing');txt.textContent='Synced';}
+}
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type?' '+type:'');
+  void t.offsetWidth; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.add('hidden');}));
+
+// ═══════════════ BOOT ═══════════════
+(async function boot(){
+  loadConfig();
+  if(!CFG?.sheetId||!CFG?.apiKey){
+    hide('loadingOverlay');
+    document.getElementById('setupScreen').classList.add('visible');
+    return;
+  }
+  try{
+    const sess=JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    if(sess?.id){currentUser=sess;await launchApp();return;}
+  }catch(e){}
+  hide('loadingOverlay');
+  showLogin();
+})();
+</script>
+</body>
+</html>

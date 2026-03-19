@@ -559,7 +559,6 @@ async function sheetsClearRow(range) {
 }
 
 // ═══════════════ OAUTH ═══════════════
-let tokenClient = null;
 let accessToken = null;
 let tokenExpiry = 0;
 
@@ -573,21 +572,39 @@ function loadGIS() {
   });
 }
 
+// Always shows the Google consent popup — never tries silent 'none' which causes interaction_required
 async function ensureToken() {
-  if (accessToken && Date.now() < tokenExpiry - 60000) return accessToken;
+  // Reuse valid token if still fresh
+  if (accessToken && Date.now() < tokenExpiry - 120000) return accessToken;
+
+  if (!CFG.clientId) throw new Error('No OAuth Client ID configured. Add it in Setup.');
+
   await loadGIS();
   return new Promise((resolve, reject) => {
+    let settled = false;
     const client = google.accounts.oauth2.initTokenClient({
       client_id: CFG.clientId,
       scope: 'https://www.googleapis.com/auth/spreadsheets',
       callback: (resp) => {
-        if (resp.error) return reject(new Error(resp.error));
+        if (settled) return;
+        settled = true;
+        if (resp.error) {
+          reject(new Error('Google auth failed: ' + resp.error + (resp.error_description ? ' — ' + resp.error_description : '')));
+          return;
+        }
         accessToken = resp.access_token;
-        tokenExpiry = Date.now() + (resp.expires_in * 1000);
+        tokenExpiry = Date.now() + ((resp.expires_in || 3599) * 1000);
         resolve(accessToken);
+      },
+      error_callback: (err) => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('Google auth error: ' + (err?.type || JSON.stringify(err))));
       }
     });
-    client.requestAccessToken({ prompt: accessToken ? '' : 'none' });
+    // Use 'select_account' on first call so user picks an account once.
+    // On subsequent calls (token refresh), use '' so no re-prompt is shown.
+    client.requestAccessToken({ prompt: accessToken === null ? 'select_account' : '' });
   });
 }
 
@@ -646,7 +663,12 @@ async function persistArticle(a) {
     return true;
   } catch(e) {
     setSyncing(false, true);
-    showToast('Save failed: ' + e.message, 'error');
+    if (e.message?.includes('auth') || e.message?.includes('401') || e.message?.includes('token')) {
+      showToast('Google auth required — use the Authorise Google button', 'error');
+      showGoogleAuthBanner();
+    } else {
+      showToast('Save failed: ' + e.message, 'error');
+    }
     return false;
   }
 }
@@ -658,7 +680,11 @@ async function deleteArticleRow(id) {
     if (r) await sheetsClearRow(`Articles!A${r}:L${r}`);
     await loadAllData();
     setSyncing(false);
-  } catch(e) { setSyncing(false,true); showToast('Delete failed: '+e.message,'error'); }
+  } catch(e) {
+    setSyncing(false,true);
+    if (e.message?.includes('auth') || e.message?.includes('401')) showGoogleAuthBanner();
+    showToast('Delete failed: '+e.message,'error');
+  }
 }
 
 async function persistUser(u) {
@@ -672,7 +698,11 @@ async function persistUser(u) {
       await loadAllData();
     }
     setSyncing(false);
-  } catch(e) { setSyncing(false,true); showToast('Save failed: '+e.message,'error'); }
+  } catch(e) {
+    setSyncing(false,true);
+    if (e.message?.includes('auth') || e.message?.includes('401')) showGoogleAuthBanner();
+    showToast('Save failed: '+e.message,'error');
+  }
 }
 
 async function deleteUserRow(id) {
@@ -682,7 +712,11 @@ async function deleteUserRow(id) {
     if (r) await sheetsClearRow(`Users!A${r}:F${r}`);
     await loadAllData();
     setSyncing(false);
-  } catch(e) { setSyncing(false,true); showToast('Delete failed: '+e.message,'error'); }
+  } catch(e) {
+    setSyncing(false,true);
+    if (e.message?.includes('auth') || e.message?.includes('401')) showGoogleAuthBanner();
+    showToast('Delete failed: '+e.message,'error');
+  }
 }
 
 // ═══════════════ SETUP ═══════════════
@@ -694,14 +728,18 @@ function showSetup() {
 async function saveSetup() {
   const sheetId = v('cfgSheetId'), apiKey = v('cfgApiKey'), clientId = v('cfgClientId');
   const name = v('cfgName'), email = v('cfgEmail'), pass = v('cfgPass');
-  if (!sheetId||!apiKey||!name||!email||!pass) { alert('Please fill in all required fields.'); return; }
+  if (!sheetId||!apiKey||!clientId) { showSetupError('Please fill in Sheet ID, API Key, and OAuth Client ID.'); return; }
+  if (!name||!email||!pass) { showSetupError('Please fill in all Admin account fields.'); return; }
 
-  saveConfig({ sheetId, apiKey, clientId: clientId || '' });
+  saveConfig({ sheetId, apiKey, clientId });
 
-  // Write first admin — no OAuth needed if sheet is public writable, but we use API key append trick
-  // Actually for initial write we still need a token — prompt once
+  const setupBtn = document.querySelector('#setupScreen .btn-primary');
+  setupBtn.disabled = true; setupBtn.textContent = 'Opening Google sign-in…';
+
   try {
+    // This will open the Google account picker popup
     const token = await ensureToken();
+    setupBtn.textContent = 'Saving to Sheets…';
     const admin = { id: genId(), name, email: email.toLowerCase(), password: pass, role: 'admin', createdAt: today() };
     const row = objToRow(admin, U_COLS);
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/Users!A:F:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
@@ -709,11 +747,36 @@ async function saveSetup() {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body: JSON.stringify({ values: [row] })
     });
-    if (!r.ok) { const e = await r.json(); alert('Sheets error: '+JSON.stringify(e.error?.message)); return; }
+    if (!r.ok) {
+      const e = await r.json();
+      const msg = e.error?.message || JSON.stringify(e);
+      showSetupError('Google Sheets error: ' + msg + (msg.includes('403') ? '\n\nMake sure the Sheets API is enabled in Google Cloud Console.' : ''));
+      setupBtn.disabled=false; setupBtn.textContent='Save & Launch →';
+      return;
+    }
     showToast('Setup complete!','success');
     document.getElementById('setupScreen').classList.remove('visible');
     showLogin();
-  } catch(e) { alert('OAuth error: '+e.message+'\n\nMake sure your Client ID is correct and this page URL is in Authorised JS origins.'); }
+  } catch(e) {
+    setupBtn.disabled=false; setupBtn.textContent='Save & Launch →';
+    const msg = e.message || String(e);
+    let hint = '';
+    if (msg.includes('popup_closed')) hint = '\n\nThe popup was closed before signing in. Please try again.';
+    else if (msg.includes('access_denied')) hint = '\n\nAccess was denied. Make sure you allow the permission request.';
+    else hint = '\n\nChecklist:\n• Client ID is correct\n• https://ragavendra1511.github.io is in Authorised JavaScript origins\n• Google Sheets API is enabled\n• No popup blocker active';
+    showSetupError(msg + hint);
+  }
+}
+
+function showSetupError(msg) {
+  let el = document.getElementById('setupError');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'setupError';
+    el.style.cssText = 'background:var(--danger-bg);color:var(--danger);border-radius:8px;padding:12px 14px;font-size:13px;white-space:pre-wrap;line-height:1.6;margin-top:.5rem;';
+    document.querySelector('#setupScreen .btn-primary').insertAdjacentElement('beforebegin', el);
+  }
+  el.textContent = msg;
 }
 
 // ═══════════════ AUTH ═══════════════
@@ -777,8 +840,47 @@ async function launchApp() {
      <span>${esc(currentUser.name)}</span>
      <span class="role-badge role-${currentUser.role}">${currentUser.role}</span>`;
 
+  // For admins: show a one-time Google auth banner so the popup is triggered
+  // by an explicit user click (browsers block popups not tied to a user gesture)
+  if (isAdmin && CFG.clientId && !accessToken) {
+    showGoogleAuthBanner();
+  }
+
   document.getElementById('appScreen').classList.add('visible');
   showView('home');
+}
+
+function showGoogleAuthBanner() {
+  const existing = document.getElementById('googleAuthBanner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'googleAuthBanner';
+  banner.style.cssText = `
+    position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+    background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:14px 18px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:150;max-width:480px;width:calc(100% - 2rem);
+  `;
+  banner.innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+    <p style="font-size:13px;color:var(--text2);flex:1;line-height:1.5">Admins need to authorise Google Sheets access before creating or editing content.</p>
+    <button class="btn btn-primary" style="flex-shrink:0;font-size:13px;" onclick="authoriseGoogle()">Authorise Google →</button>
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;font-size:18px;line-height:1;">×</button>
+  `;
+  document.body.appendChild(banner);
+}
+
+async function authoriseGoogle() {
+  const banner = document.getElementById('googleAuthBanner');
+  if (banner) banner.querySelector('.btn-primary').textContent = 'Opening…';
+  try {
+    await ensureToken();
+    if (banner) banner.remove();
+    showToast('Google Sheets authorised ✓', 'success');
+  } catch(e) {
+    if (banner) banner.querySelector('.btn-primary').textContent = 'Retry';
+    showToast('Auth failed: ' + e.message, 'error');
+  }
 }
 
 // ═══════════════ VIEWS ═══════════════
